@@ -39,11 +39,14 @@ import asia.stampy.common.netty.AbstractStampyNettyMessageGateway;
 @StampyLibrary(libraryName = "stampy-NETTY-client-server-RI")
 public class ClientNettyMessageGateway extends AbstractStampyNettyMessageGateway {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private NioClientSocketChannelFactory factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
-      Executors.newCachedThreadPool());
+  protected NioClientSocketChannelFactory factory;
   private String host;
 
   private Channel client;
+  
+  public ClientNettyMessageGateway() {
+    this.factory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+  }
 
   private ClientBootstrap init() {
     ClientBootstrap bootstrap = new ClientBootstrap(factory);

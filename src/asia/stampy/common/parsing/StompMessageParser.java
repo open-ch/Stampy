@@ -80,6 +80,9 @@ public class StompMessageParser {
       reader = new BufferedReader(new StringReader(stompMessage));
 
       String messageType = reader.readLine();
+      while(StringUtils.isEmpty(messageType)) {
+        messageType = reader.readLine();
+      }
 
       StompMessageType type = StompMessageType.valueOf(messageType);
 
@@ -133,8 +136,7 @@ public class StompMessageParser {
   protected Object convertToObject(String body, String contentType) throws IllegalObjectException,
       ClassNotFoundException, IOException {
     if (!AbstractBodyMessage.JAVA_BASE64_MIME_TYPE.equals(contentType)) {
-      throw new NotImplementedException(
-          "Subclass this class and override convertToObject to enable conversion using mime type " + contentType);
+      return body;
     }
 
     Object o = SerializationUtils.deserializeBase64(body);
@@ -259,14 +261,14 @@ public class StompMessageParser {
 
   private <MSG extends StampyMessage<?>> void addHeaders(MSG message, List<String> headers) throws UnparseableException {
     for (String header : headers) {
-      StringTokenizer st = new StringTokenizer(header, ":");
-
-      if (st.countTokens() < 2) {
+      
+      int indexOfCol = header.indexOf(':');
+      if (indexOfCol == -1 || indexOfCol != header.lastIndexOf(':')) {
         log.error("Cannot parse STOMP header {}", header);
         throw new UnparseableException("Cannot parse STOMP header " + header);
       }
 
-      String key = st.nextToken();
+      String key = header.substring(0, indexOfCol);
       String value = header.substring(key.length() + 1);
 
       message.getHeader().addHeader(key, value);

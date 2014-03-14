@@ -17,7 +17,9 @@
 
 	<target name="resolve">
 		<ivy:resolve file="${basedir}/ivy.xml"/>
+    <ivy:retrieve />
 	</target>
+	
 	
 	<target name="mkdirs">
 		<mkdir dir="${basedir}/build"/>
