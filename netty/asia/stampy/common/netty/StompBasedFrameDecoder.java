@@ -18,6 +18,8 @@
  */
 package asia.stampy.common.netty;
 
+import java.util.StringTokenizer;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
@@ -82,10 +84,30 @@ public class StompBasedFrameDecoder extends FrameDecoder {
   @Override
   protected Object decode(final ChannelHandlerContext ctx, final Channel channel,
       final ChannelBuffer buffer) throws Exception {
-    final int eol = findEndOfMessage(buffer);
-    if (eol != -1) {
+    final int eoh = findEndOfHeader(buffer);
+    if(eoh != -1) {
+      int headerLength = eoh - buffer.readerIndex();
+      byte[] allHeaders = new byte[headerLength];
+      buffer.getBytes(buffer.readerIndex(), allHeaders);
+      int contentLength = readContentLength(allHeaders);
+      if(contentLength != -1) {
+        // We have a content-length in the header, so we read exactly this!
+        if(buffer.writerIndex() - buffer.readerIndex() > contentLength + headerLength) {
+          Object f =  extractFrame(buffer, buffer.readerIndex(), headerLength + contentLength +2);
+          buffer.skipBytes(headerLength + contentLength +2);
+          return f;
+        } else {
+          // No there yet.
+          return null;
+        }
+      }
+    }
+    // Let's guess the EOM, then
+    final int eom = findEndOfMessage(buffer);
+    
+    if (eom != -1) {
       final ChannelBuffer frame;
-      final int length = eol - buffer.readerIndex();
+      final int length = eom - buffer.readerIndex();
       assert length >= 0 : "Invalid length=" + length;
       if (discarding) {
         frame = null;
@@ -120,6 +142,18 @@ public class StompBasedFrameDecoder extends FrameDecoder {
     return null;
   }
 
+  private int readContentLength(byte[] bytes) {
+    final String hdr = "content-length:";
+    StringTokenizer tok = new StringTokenizer(new String(bytes), "\n");
+    while (tok.hasMoreTokens()) {
+      String l = tok.nextToken().trim();
+      if(l.startsWith(hdr)) {
+        return Integer.parseInt(l.substring(hdr.length()));
+      }
+    }
+    return -1;
+  }
+
   private void fail(final ChannelHandlerContext ctx, final String msg) {
     Channels.fireExceptionCaught(ctx.getChannel(), new TooLongFrameException("Frame length exceeds " + maxLength + " ("
         + msg + ')'));
@@ -139,6 +173,19 @@ public class StompBasedFrameDecoder extends FrameDecoder {
       } else if (wIdx - rIdx == 2 && b == '\r' && i < wIdx - 1 && buffer.getByte(i + 1) == '\n') {
         return i; // \r\n
       } else if (wIdx - rIdx == 1 && b == '\n') {
+        return i;
+      }
+    }
+    return -1; // Not found.
+  }
+  
+  private static int findEndOfHeader(final ChannelBuffer buffer) {
+    final int wIdx = buffer.writerIndex();
+    for (int i = buffer.readerIndex(); i < wIdx; i++) {
+      final byte b = buffer.getByte(i);
+      if (wIdx - i >= 2 && b == '\n' && buffer.getByte(i + 1) == '\n') {
+        return i;
+      } else if (wIdx - i >= 4 && b == '\n' && buffer.getByte(i+1) == '\r' & buffer.getByte(i+2) == '\n' && buffer.getByte(i+3) == '\r') {
         return i;
       }
     }

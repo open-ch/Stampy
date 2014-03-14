@@ -20,13 +20,11 @@ package asia.stampy.common.parsing;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.StringTokenizer;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,45 +73,35 @@ public class StompMessageParser {
    *           the unparseable exception
    */
   public <MSG extends StampyMessage<?>> MSG parseMessage(String stompMessage) throws UnparseableException {
-    BufferedReader reader = null;
+    ReadableByteArray r = new ReadableByteArray(stompMessage.getBytes());
+    
     try {
-      reader = new BufferedReader(new StringReader(stompMessage));
-
-      String messageType = reader.readLine();
-      while(StringUtils.isEmpty(messageType)) {
-        messageType = reader.readLine();
+      String messageType = new String(r.toNextNewLine());
+      while(messageType.length() <= 1) {
+        messageType = new String(r.toNextNewLine());
       }
 
       StompMessageType type = StompMessageType.valueOf(messageType);
 
       List<String> headers = new ArrayList<String>();
-      String hdr = reader.readLine();
+      String hdr = new String(r.toNextNewLine());
 
       while (StringUtils.isNotEmpty(hdr)) {
         headers.add(hdr);
-        hdr = reader.readLine();
+        hdr = new String(r.toNextNewLine());
       }
-
-      String body = reader.readLine();
-      body = body == null || body.equals(EOM) ? null : fillBody(body, reader);
+      
+      byte[] body = r.readToEnd();
 
       MSG msg = createStampyMessage(type, headers);
-
-      if (!StringUtils.isEmpty(body) && msg instanceof AbstractBodyMessage<?>) {
+      
+      if (!StringUtils.isEmpty(new String(body)) && msg instanceof AbstractBodyMessage<?>) {
         AbstractBodyMessage<?> abm = (AbstractBodyMessage<?>) msg;
-        abm.setBody(isText(headers) ? body : convertToObject(body, abm.getHeader().getContentType()));
+        abm.setBody(isText(headers) ? new String(body) : convertToObject(body, abm.getHeader().getContentType()));
       }
       return msg;
     } catch (Exception e) {
       throw new UnparseableException("The message supplied cannot be parsed as a STOMP message", stompMessage, e);
-    } finally {
-      if (reader != null) {
-        try {
-          reader.close();
-        } catch (IOException e) {
-          log.warn("Could not close reader", e);
-        }
-      }
     }
   }
 
@@ -133,13 +121,13 @@ public class StompMessageParser {
    * @throws IOException
    *           Signals that an I/O exception has occurred.
    */
-  protected Object convertToObject(String body, String contentType) throws IllegalObjectException,
+  protected Object convertToObject(byte[] body, String contentType) throws IllegalObjectException,
       ClassNotFoundException, IOException {
     if (!AbstractBodyMessage.JAVA_BASE64_MIME_TYPE.equals(contentType)) {
       return body;
     }
 
-    Object o = SerializationUtils.deserializeBase64(body);
+    Object o = SerializationUtils.deserializeBase64(new String(body));
 
     illegalObjectCheck(o);
 
@@ -314,5 +302,53 @@ public class StompMessageParser {
     }
 
     return trimmed;
+  }
+  
+  /**
+   * Supports reading lines from a byte array
+   */
+  private static class ReadableByteArray {
+
+    byte[] data;
+    int pos = 0;
+    
+    public ReadableByteArray(byte[] bytes) {
+      this.data = bytes;
+    }
+    
+    /**
+     * Read from the current position to the next new line (\n or \n\r)
+     * @return the read chunk
+     */
+    public byte[] toNextNewLine() {
+      int startpos = pos;
+      int found = -1;
+      for (; pos < data.length; pos++) {
+        if(data[pos] == '\n') {
+          found = pos;
+          break;
+        }
+      }
+      
+      if (found != -1) {
+        byte[] r = Arrays.copyOfRange(data, startpos, pos);
+        if(pos+1 < data.length && data[pos+1] == '\r') {
+          pos++;
+        }
+        pos++;
+        return r;
+      } else {
+        pos++;
+        return Arrays.copyOfRange(data, startpos, pos);
+      }
+    }
+    
+    /**
+     * Gets the remaining data from the byte array
+     * @return pos - arrayEnd
+     */
+    public byte[] readToEnd() {
+      return Arrays.copyOfRange(data, pos, this.data.length);
+    }
   }
 }

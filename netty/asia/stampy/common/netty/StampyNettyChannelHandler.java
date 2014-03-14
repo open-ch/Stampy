@@ -95,6 +95,10 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
     }
 
     final String msg = (String) e.getMessage();
+    if (msg.length() == 0 || msg.length() == 1) {
+      return;
+      
+    }
 
     if (helper.isHeartbeat(msg)) {
       log.trace("Received heartbeat");
