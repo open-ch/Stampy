@@ -18,9 +18,7 @@
  */
 package asia.stampy.common;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
-
+import org.junit.Assert;
 import org.mockito.Mock;
 
 import asia.stampy.client.message.abort.AbortMessage;
@@ -107,7 +105,7 @@ public abstract class AbstractListenerTest {
   }
 
   private void testTypes(StompMessageType[] expecteds, StompMessageType[] actuals) {
-    assertEquals(expecteds.length, actuals.length);
+    Assert.assertEquals(expecteds.length, actuals.length);
 
     for (StompMessageType expected : expecteds) {
       testTypes(expected, actuals);
@@ -119,8 +117,8 @@ public abstract class AbstractListenerTest {
     for (StompMessageType actual : actuals) {
       if (actual.equals(expected)) exists = true;
     }
-
-    assertTrue(exists);
+    
+    Assert.assertTrue(exists);
   }
 
 }

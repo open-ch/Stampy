@@ -5,7 +5,6 @@ import java.lang.invoke.MethodHandles;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang.StringUtils;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,19 +126,8 @@ public class StampyHandlerHelper {
    *          the msg
    * @return true, if is heartbeat
    */
-  public boolean isHeartbeat(String msg) {
+  public boolean isHeartbeat(byte[] msg) {
     return msg.equals(StampyHeartbeatContainer.HB1) || msg.equals(StampyHeartbeatContainer.HB2);
-  }
-
-  /**
-   * Checks if is valid object. Must be a ChannelBuffer.
-   * 
-   * @param message
-   *          the message
-   * @return true, if is valid object
-   */
-  public boolean isValidObject(Object message) {
-    return message instanceof ChannelBuffer;
   }
 
   /**

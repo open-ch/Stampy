@@ -156,7 +156,7 @@ public class ClientMinaMessageGateway extends AbstractStampyMinaMessageGateway {
    */
   @Override
   public void sendMessage(byte[] message, HostPort hostPort) throws InterceptException {
-    broadcastMessage(new String(message));
+    broadcastMessage(message);
   }
 
   /*
@@ -173,7 +173,7 @@ public class ClientMinaMessageGateway extends AbstractStampyMinaMessageGateway {
       throw new IllegalStateException("The connector is not active, cannot send message");
     }
 
-    interceptOutgoingMessage(message);
+    interceptOutgoingMessage(new String(message));
 
     for (HostPort hostPort : serviceAdapter.getHostPorts()) {
       getHandler().getHeartbeatContainer().reset(hostPort);

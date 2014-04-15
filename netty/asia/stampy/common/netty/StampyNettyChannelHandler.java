@@ -90,7 +90,7 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
 
     helper.resetHeartbeat(hostPort);
 
-    if (!helper.isValidObject(e.getMessage())) {
+    if (!(e.getMessage() instanceof ChannelBuffer)) {
       log.error("Object {} is not a valid STOMP message, closing connection {}", e.getMessage(), hostPort);
       illegalAccess(ctx);
       return;
@@ -103,12 +103,10 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
       
     }
 
-//    if (helper.isHeartbeat(msg)) {
-//      log.trace("Received heartbeat");
-//      return;
-//    }
-    
-    //TODO
+    if (helper.isHeartbeat(msg)) {
+      log.trace("Received heartbeat");
+      return;
+    }
 
     Runnable runnable = new Runnable() {
 

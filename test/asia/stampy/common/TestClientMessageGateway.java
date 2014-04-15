@@ -27,48 +27,47 @@ import asia.stampy.common.message.interceptor.InterceptException;
 public class TestClientMessageGateway extends AbstractStampyMessageGateway {
 
   public TestClientMessageGateway() {
-    // TODO Auto-generated constructor stub
   }
 
   @Override
-  public void broadcastMessage(String stompMessage) throws InterceptException {
-    // TODO Auto-generated method stub
+  public void broadcastMessage(byte[] stompMessage) throws InterceptException {
+    
 
   }
 
   @Override
-  public void sendMessage(String stompMessage, HostPort hostPort) throws InterceptException {
-    // TODO Auto-generated method stub
+  public void sendMessage(byte[] stompMessage, HostPort hostPort) throws InterceptException {
+    
 
   }
 
   @Override
   public void closeConnection(HostPort hostPort) {
-    // TODO Auto-generated method stub
+    
 
   }
 
   @Override
   public void connect() throws Exception {
-    // TODO Auto-generated method stub
+    
 
   }
 
   @Override
   public void shutdown() throws Exception {
-    // TODO Auto-generated method stub
+    
 
   }
 
   @Override
   public boolean isConnected(HostPort hostPort) {
-    // TODO Auto-generated method stub
+    
     return false;
   }
 
   @Override
   public Set<HostPort> getConnectedHostPorts() {
-    // TODO Auto-generated method stub
+    
     return null;
   }
 

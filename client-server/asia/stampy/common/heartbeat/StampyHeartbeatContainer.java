@@ -24,9 +24,9 @@ import asia.stampy.common.gateway.HostPort;
 public interface StampyHeartbeatContainer {
 
   /** The Constant HB1. */
-  public static final String HB1 = "\n";
+  public static final byte[] HB1 = new byte[]{'\n'};
   /** The Constant HB2. */
-  public static final String HB2 = "\r\n";
+  public static final byte[] HB2 = new byte[]{'\r', '\n'};
 
   /**
    * Starts a heartbeat for the specified host & port.

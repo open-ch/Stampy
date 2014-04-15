@@ -18,15 +18,14 @@
  */
 package asia.stampy.common.mina.raw;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
 import org.slf4j.Logger;
@@ -38,7 +37,7 @@ import asia.stampy.common.gateway.MessageListenerHaltException;
 import asia.stampy.common.message.StampyMessage;
 import asia.stampy.common.message.StompMessageType;
 import asia.stampy.common.mina.StampyMinaHandler;
-import asia.stampy.common.parsing.StompMessageParser;
+import asia.stampy.common.parsing.StompMessageParser.ReadableByteArray;
 import asia.stampy.common.parsing.UnparseableException;
 
 /**
@@ -51,7 +50,7 @@ import asia.stampy.common.parsing.UnparseableException;
 public abstract class StampyRawStringHandler extends StampyMinaHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Map<HostPort, String> messageParts = new ConcurrentHashMap<HostPort, String>();
+  private Map<HostPort, byte[]> messageParts = new ConcurrentHashMap<>();
 
   /*
    * (non-Javadoc)
@@ -67,13 +66,13 @@ public abstract class StampyRawStringHandler extends StampyMinaHandler {
 
     helper.resetHeartbeat(hostPort);
 
-    if (!helper.isValidObject(message)) {
+    if (!(message instanceof byte[])) {
       log.error("Object {} is not a valid STOMP message, closing connection {}", message, hostPort);
       illegalAccess(session);
       return;
     }
 
-    final String msg = (String) message;
+    final byte[] msg = (byte[]) message;
 
     Runnable runnable = new Runnable() {
 
@@ -104,39 +103,42 @@ public abstract class StampyRawStringHandler extends StampyMinaHandler {
    * .core.session.IoSession, asia.stampy.common.HostPort, java.lang.String)
    */
   @Override
-  protected void asyncProcessing(HostPort hostPort, String msg) {
+  protected void asyncProcessing(HostPort hostPort, byte[] msg) {
     try {
-      String existing = messageParts.get(hostPort);
-      if (StringUtils.isEmpty(existing)) {
+      byte[] existing = messageParts.get(hostPort);
+      if (existing.length == 0) {
         processNewMessage(hostPort, msg);
       } else {
-        String concat = existing + msg;
-        processMessage(concat, hostPort);
+        ByteArrayOutputStream concat = new ByteArrayOutputStream( );
+        concat.write(existing);
+        concat.write(msg);
+        processMessage(concat.toByteArray(), hostPort);
       }
     } catch (UnparseableException e) {
-      helper.handleUnparseableMessage(hostPort, msg, e);
+      helper.handleUnparseableMessage(hostPort, new String(msg), e);
     } catch (MessageListenerHaltException e) {
       // halting
     } catch (Exception e) {
-      helper.handleUnexpectedError(hostPort, msg, null, e);
+      helper.handleUnexpectedError(hostPort, new String(msg), null, e);
     }
   }
 
-  private void processNewMessage(HostPort hostPort, String msg) throws Exception, UnparseableException, IOException {
+  private void processNewMessage(HostPort hostPort, byte[] msg) throws Exception, UnparseableException, IOException {
     if (helper.isHeartbeat(msg)) {
       log.trace("Received heartbeat");
       return;
     } else if (isStompMessage(msg)) {
       processMessage(msg, hostPort);
     } else {
-      helper.handleUnparseableMessage(hostPort, msg, null);
+      helper.handleUnparseableMessage(hostPort, new String(msg), null);
     }
   }
 
-  private void processMessage(String msg, HostPort hostPort) throws Exception {
-    int length = msg.length();
-    int idx = msg.indexOf(StompMessageParser.EOM);
+  private void processMessage(byte[] msg, HostPort hostPort) throws Exception {
+    int length = msg.length;
+    int idx = indexOfEOM(msg);
 
+    //TODO this is not correct, a single message may contain \0 if the content-length is set.
     if (idx == length - 1) {
       log.trace("Creating StampyMessage from {}", msg);
       processStompMessage(msg, hostPort);
@@ -149,12 +151,12 @@ public abstract class StampyRawStringHandler extends StampyMinaHandler {
     }
   }
 
-  private void processMultiMessages(String msg, HostPort hostPort) throws Exception {
-    int idx = msg.indexOf(StompMessageParser.EOM);
-    String fullMessage = msg.substring(0, idx + 1);
-    String partMessage = msg.substring(idx);
-    if (partMessage.startsWith(StompMessageParser.EOM)) {
-      partMessage = partMessage.substring(1);
+  private void processMultiMessages(byte[] msg, HostPort hostPort) throws Exception {
+    int idx = indexOfEOM(msg);
+    byte[] fullMessage = Arrays.copyOfRange(msg, 0, idx +1);
+    byte[] partMessage = Arrays.copyOfRange(msg, idx, msg.length-1);
+    if (partMessage[0] == '\0') {
+      partMessage = Arrays.copyOfRange(partMessage, 1, partMessage.length-1);
     }
 
     processStompMessage(fullMessage, hostPort);
@@ -162,7 +164,7 @@ public abstract class StampyRawStringHandler extends StampyMinaHandler {
     processMessage(partMessage, hostPort);
   }
 
-  private void processStompMessage(String msg, HostPort hostPort) throws MessageListenerHaltException {
+  private void processStompMessage(byte[] msg, HostPort hostPort) throws MessageListenerHaltException {
     messageParts.remove(hostPort);
     StampyMessage<?> sm = null;
     try {
@@ -171,21 +173,24 @@ public abstract class StampyRawStringHandler extends StampyMinaHandler {
     } catch (MessageListenerHaltException e) {
       throw e;
     } catch (Exception e) {
-      helper.handleUnexpectedError(hostPort, msg, sm, e);
+      helper.handleUnexpectedError(hostPort, new String(msg), sm, e);
     }
   }
 
-  private boolean isStompMessage(String msg) throws Exception {
-    BufferedReader reader = null;
-    try {
-      reader = new BufferedReader(new StringReader(msg));
-      String stompMessageType = reader.readLine();
-
-      StompMessageType type = StompMessageType.valueOf(stompMessageType);
-      return type != null;
-    } finally {
-      if (reader != null) reader.close();
+  private boolean isStompMessage(byte[] msg) throws Exception {
+    ReadableByteArray r = new ReadableByteArray(msg);
+    byte[] line = r.toNextNewLine();
+    StompMessageType type = StompMessageType.valueOf(new String(line));
+    return type != null;
+  }
+  
+  private int indexOfEOM(byte[] msg) {
+    for (int i = 0; i < msg.length; i++) {
+      if(msg[i] == '\0') {
+        return i;
+      }
     }
+    return -1;
   }
 
 }

@@ -307,7 +307,7 @@ public class StompMessageParser {
   /**
    * Supports reading lines from a byte array
    */
-  private static class ReadableByteArray {
+  public static class ReadableByteArray {
 
     byte[] data;
     int pos = 0;

@@ -20,11 +20,14 @@ package asia.stampy.common.message;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import asia.stampy.common.StampyLibrary;
 import asia.stampy.common.parsing.StompMessageParser;
@@ -37,7 +40,7 @@ import asia.stampy.common.parsing.StompMessageParser;
  */
 @StampyLibrary(libraryName="stampy-core")
 public abstract class AbstractMessage<HDR extends StampyMessageHeader> implements StampyMessage<HDR> {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final long serialVersionUID = -577180637937320507L;
 
   private HDR header;
@@ -101,14 +104,10 @@ public abstract class AbstractMessage<HDR extends StampyMessageHeader> implement
         bOut.write(header.getBytes());
       }
       bOut.write("\n\n".getBytes());
-      System.out.println("Header written, length: " + bOut.toByteArray().length);
       bOut.write(body != null ? body : new byte[0]);
-      System.out.println("Body written, length: " + bOut.toByteArray().length);
       bOut.write(StompMessageParser.EOM.getBytes());
-      System.out.println("EOM written, length: " + bOut.toByteArray().length);
     } catch (IOException e) {
-      //TODO
-
+      log.warn("Can't serialize the message body: " + e.toString());
     }
     
     return bOut.toByteArray();  

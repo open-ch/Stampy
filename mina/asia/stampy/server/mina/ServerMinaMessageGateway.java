@@ -127,7 +127,7 @@ public class ServerMinaMessageGateway extends AbstractStampyMinaMessageGateway {
       throw new IllegalStateException("The acceptor is not active, cannot send message");
     }
 
-    interceptOutgoingMessage(message);
+    interceptOutgoingMessage(new String(message));
 
     getHandler().getHeartbeatContainer().reset(hostPort);
     serviceAdapter.sendMessage(message, hostPort);
@@ -147,7 +147,7 @@ public class ServerMinaMessageGateway extends AbstractStampyMinaMessageGateway {
       throw new IllegalStateException("The acceptor is not active, cannot send message");
     }
 
-    interceptOutgoingMessage(message);
+    interceptOutgoingMessage(new String(message));
 
     for (HostPort hostPort : serviceAdapter.getHostPorts()) {
       getHandler().getHeartbeatContainer().reset(hostPort);

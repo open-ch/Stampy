@@ -28,7 +28,6 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
 import org.apache.mina.filter.codec.prefixedstring.PrefixedStringCodecFactory;
-import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,22 +93,19 @@ public abstract class StampyMinaHandler extends IoHandlerAdapter {
 
     helper.resetHeartbeat(hostPort);
 
-    if (!helper.isValidObject(message)) {
+    if (!(message instanceof byte[])) {
       log.error("Object {} is not a valid STOMP message, closing connection {}", message, hostPort);
       illegalAccess(session);
       return;
     }
 
-    final byte[] msg = ((ChannelBuffer) message).toByteBuffer().array();
+    final byte[] msg = (byte[]) message;
     
 
-//    if (helper.isHeartbeat(msg)) {
-//      log.trace("Received heartbeat");
-//      return;
-//    }
-    
-    //TODO
-    
+    if (helper.isHeartbeat(msg)) {
+      log.trace("Received heartbeat");
+      return;
+    }
 
     Runnable runnable = new Runnable() {
 
