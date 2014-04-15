@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
@@ -94,16 +96,19 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
       return;
     }
 
-    final String msg = (String) e.getMessage();
-    if (msg.length() == 0 || msg.length() == 1) {
+    final byte[] msg = ((ChannelBuffer) e.getMessage()).toByteBuffer().array();
+
+    if (msg.length == 0 || msg.length == 1) {
       return;
       
     }
 
-    if (helper.isHeartbeat(msg)) {
-      log.trace("Received heartbeat");
-      return;
-    }
+//    if (helper.isHeartbeat(msg)) {
+//      log.trace("Received heartbeat");
+//      return;
+//    }
+    
+    //TODO
 
     Runnable runnable = new Runnable() {
 
@@ -190,7 +195,7 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
    * @param message
    *          the message
    */
-  public void broadcastMessage(String message) {
+  public void broadcastMessage(byte[] message) {
     for (Channel channel : sessions.values()) {
       sendMessage(message, null, channel);
     }
@@ -204,11 +209,11 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
    * @param hostPort
    *          the host port
    */
-  public void sendMessage(String message, HostPort hostPort) {
+  public void sendMessage(byte[] message, HostPort hostPort) {
     sendMessage(message, hostPort, sessions.get(hostPort));
   }
 
-  private synchronized void sendMessage(String message, HostPort hostPort, Channel channel) {
+  private synchronized void sendMessage(byte[] message, HostPort hostPort, Channel channel) {
     if (channel == null || !channel.isConnected()) {
       log.error("Channel is not connected, cannot send message {}", message);
       return;
@@ -217,7 +222,7 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
     if (hostPort == null) hostPort = new HostPort((InetSocketAddress) channel.getRemoteAddress());
     helper.resetHeartbeat(hostPort);
 
-    channel.write(message);
+    channel.write(ChannelBuffers.wrappedBuffer(message));
   }
 
   /**
@@ -249,18 +254,18 @@ public abstract class StampyNettyChannelHandler extends SimpleChannelUpstreamHan
    * @param msg
    *          the msg
    */
-  protected void asyncProcessing(HostPort hostPort, String msg) {
+  protected void asyncProcessing(HostPort hostPort, byte[] msg) {
     StampyMessage<?> sm = null;
     try {
       sm = getParser().parseMessage(msg);
 
       getGateway().notifyMessageListeners(sm, hostPort);
     } catch (UnparseableException e) {
-      helper.handleUnparseableMessage(hostPort, msg, e);
+      helper.handleUnparseableMessage(hostPort, new String(msg), e);
     } catch (MessageListenerHaltException e) {
       // halting
     } catch (Exception e) {
-      helper.handleUnexpectedError(hostPort, msg, sm, e);
+      helper.handleUnexpectedError(hostPort, new String(msg), sm, e);
     }
   }
 

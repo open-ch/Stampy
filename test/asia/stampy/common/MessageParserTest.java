@@ -18,8 +18,7 @@
  */
 package asia.stampy.common;
 
-import static junit.framework.Assert.assertTrue;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import asia.stampy.client.message.abort.AbortMessage;
@@ -251,10 +250,9 @@ public class MessageParserTest {
   }
 
   private void testEquals(AbstractMessage<?> message) throws UnparseableException {
-    String stomp = message.toStompMessage(true);
-
+    byte[] stomp = message.toStompMessage(true);
     AbstractMessage<?> parsed = parser.parseMessage(stomp);
-
-    assertTrue(message.equals(parsed));
+    
+    Assert.assertTrue(message.equals(parsed));
   }
 }

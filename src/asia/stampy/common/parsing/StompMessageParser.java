@@ -72,8 +72,8 @@ public class StompMessageParser {
    * @throws UnparseableException
    *           the unparseable exception
    */
-  public <MSG extends StampyMessage<?>> MSG parseMessage(String stompMessage) throws UnparseableException {
-    ReadableByteArray r = new ReadableByteArray(stompMessage.getBytes());
+  public <MSG extends StampyMessage<?>> MSG parseMessage(byte[] stompMessage) throws UnparseableException {
+    ReadableByteArray r = new ReadableByteArray(stompMessage);
     
     try {
       String messageType = new String(r.toNextNewLine());
@@ -101,7 +101,7 @@ public class StompMessageParser {
       }
       return msg;
     } catch (Exception e) {
-      throw new UnparseableException("The message supplied cannot be parsed as a STOMP message", stompMessage, e);
+      throw new UnparseableException("The message supplied cannot be parsed as a STOMP message", new String(stompMessage), e);
     }
   }
 

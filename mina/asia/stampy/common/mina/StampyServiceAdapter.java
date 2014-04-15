@@ -148,7 +148,7 @@ public class StampyServiceAdapter extends MinaServiceAdapter {
    * @param hostPort
    *          the host port
    */
-  public void sendMessage(String stompMessage, HostPort hostPort) {
+  public void sendMessage(byte[] stompMessage, HostPort hostPort) {
     if (!hasSession(hostPort)) {
       log.error("No session for {}, cannot send message {}", hostPort, stompMessage);
       return;

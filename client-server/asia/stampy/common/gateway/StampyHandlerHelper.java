@@ -5,6 +5,7 @@ import java.lang.invoke.MethodHandles;
 import javax.annotation.Resource;
 
 import org.apache.commons.lang.StringUtils;
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,14 +132,14 @@ public class StampyHandlerHelper {
   }
 
   /**
-   * Checks if is valid object. Must be a string.
+   * Checks if is valid object. Must be a ChannelBuffer.
    * 
    * @param message
    *          the message
    * @return true, if is valid object
    */
   public boolean isValidObject(Object message) {
-    return message instanceof String;
+    return message instanceof ChannelBuffer;
   }
 
   /**

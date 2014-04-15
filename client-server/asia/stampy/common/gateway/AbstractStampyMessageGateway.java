@@ -327,7 +327,7 @@ public abstract class AbstractStampyMessageGateway {
    * @throws InterceptException
    *           the intercept exception
    */
-  public abstract void broadcastMessage(String stompMessage) throws InterceptException;
+  public abstract void broadcastMessage(byte[] stompMessage) throws InterceptException;
 
   /**
    * Sends the specified String to the specified {@link HostPort}. Included for
@@ -341,7 +341,7 @@ public abstract class AbstractStampyMessageGateway {
    * @throws InterceptException
    *           the intercept exception
    */
-  public abstract void sendMessage(String stompMessage, HostPort hostPort) throws InterceptException;
+  public abstract void sendMessage(byte[] stompMessage, HostPort hostPort) throws InterceptException;
 
   /**
    * Closes the connection to the STOMP server or client.

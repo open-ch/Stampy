@@ -28,6 +28,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFactory;
 import org.apache.mina.filter.codec.prefixedstring.PrefixedStringCodecFactory;
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,12 +100,16 @@ public abstract class StampyMinaHandler extends IoHandlerAdapter {
       return;
     }
 
-    final String msg = (String) message;
+    final byte[] msg = ((ChannelBuffer) message).toByteBuffer().array();
+    
 
-    if (helper.isHeartbeat(msg)) {
-      log.trace("Received heartbeat");
-      return;
-    }
+//    if (helper.isHeartbeat(msg)) {
+//      log.trace("Received heartbeat");
+//      return;
+//    }
+    
+    //TODO
+    
 
     Runnable runnable = new Runnable() {
 
@@ -143,18 +148,18 @@ public abstract class StampyMinaHandler extends IoHandlerAdapter {
    * @param msg
    *          the msg
    */
-  protected void asyncProcessing(HostPort hostPort, String msg) {
+  protected void asyncProcessing(HostPort hostPort, byte[] msg) {
     StampyMessage<?> sm = null;
     try {
       sm = getParser().parseMessage(msg);
 
       getGateway().notifyMessageListeners(sm, hostPort);
     } catch (UnparseableException e) {
-      helper.handleUnparseableMessage(hostPort, msg, e);
+      helper.handleUnparseableMessage(hostPort, new String(msg), e);
     } catch (MessageListenerHaltException e) {
       // halting
     } catch (Exception e) {
-      helper.handleUnexpectedError(hostPort, msg, sm, e);
+      helper.handleUnexpectedError(hostPort, new String(msg), sm, e);
     }
   }
 

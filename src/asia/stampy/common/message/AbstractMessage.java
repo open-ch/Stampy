@@ -18,6 +18,9 @@
  */
 package asia.stampy.common.message;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -84,25 +87,31 @@ public abstract class AbstractMessage<HDR extends StampyMessageHeader> implement
    * @see asia.stampy.common.message.StampyMessage#toStompMessage(boolean)
    */
   @Override
-  public final String toStompMessage(boolean validate) {
+  public final byte[] toStompMessage(boolean validate) {
     if (validate) validate();
+    
+    ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+    
+    try {
+      byte[] body = postHeader();
+      bOut.write(getMessageType().name().getBytes());
+      String header = getHeader().toMessageHeader();
+      if (StringUtils.isNotEmpty(header)) {
+        bOut.write("\n".getBytes());
+        bOut.write(header.getBytes());
+      }
+      bOut.write("\n\n".getBytes());
+      System.out.println("Header written, length: " + bOut.toByteArray().length);
+      bOut.write(body != null ? body : new byte[0]);
+      System.out.println("Body written, length: " + bOut.toByteArray().length);
+      bOut.write(StompMessageParser.EOM.getBytes());
+      System.out.println("EOM written, length: " + bOut.toByteArray().length);
+    } catch (IOException e) {
+      //TODO
 
-    StringBuilder builder = new StringBuilder();
-
-    String body = postHeader();
-
-    builder.append(getMessageType().name());
-    String header = getHeader().toMessageHeader();
-    if (StringUtils.isNotEmpty(header)) {
-      builder.append("\n");
-      builder.append(header);
     }
-    builder.append("\n\n");
-    builder.append(body);
-
-    builder.append(StompMessageParser.EOM);
-
-    return builder.toString();
+    
+    return bOut.toByteArray();  
   }
 
   /**
@@ -118,7 +127,7 @@ public abstract class AbstractMessage<HDR extends StampyMessageHeader> implement
    * 
    * @return the string
    */
-  protected String postHeader() {
+  protected byte[] postHeader() {
     return null;
   }
 

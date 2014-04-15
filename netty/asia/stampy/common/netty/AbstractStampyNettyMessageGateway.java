@@ -29,8 +29,6 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.DefaultChannelPipeline;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
-import org.jboss.netty.handler.codec.string.StringDecoder;
-import org.jboss.netty.handler.codec.string.StringEncoder;
 
 import asia.stampy.common.StampyLibrary;
 import asia.stampy.common.gateway.AbstractStampyMessageGateway;
@@ -72,7 +70,7 @@ public abstract class AbstractStampyNettyMessageGateway extends AbstractStampyMe
    * (java.lang.String)
    */
   @Override
-  public void broadcastMessage(String stompMessage) throws InterceptException {
+  public void broadcastMessage(byte[] stompMessage) throws InterceptException {
     getHandler().broadcastMessage(stompMessage);
   }
 
@@ -84,7 +82,7 @@ public abstract class AbstractStampyNettyMessageGateway extends AbstractStampyMe
    * .lang.String, asia.stampy.common.gateway.HostPort)
    */
   @Override
-  public void sendMessage(String stompMessage, HostPort hostPort) throws InterceptException {
+  public void sendMessage(byte[] stompMessage, HostPort hostPort) throws InterceptException {
     getHandler().sendMessage(stompMessage, hostPort);
   }
 
@@ -163,15 +161,10 @@ public abstract class AbstractStampyNettyMessageGateway extends AbstractStampyMe
    */
   protected void setupChannelPipeline(ChannelPipeline pipeline, int maxLength) {
     addHandlers(pipeline);
-
-    StringEncoder encoder = new StringEncoder(CHARSET);
-    StringDecoder decoder = new StringDecoder(CHARSET);
-
+    
     StompBasedFrameDecoder stomp = new StompBasedFrameDecoder(maxLength);
 
     pipeline.addLast("stompDecoder", stomp);
-    pipeline.addLast("stringDecoder", decoder);
-    pipeline.addLast("stringEncoder", encoder);
     pipeline.addLast("stampyChannelHandler", getHandler());
   }
 

@@ -123,20 +123,23 @@ public abstract class AbstractBodyMessage<HDR extends AbstractBodyMessageHeader>
    * @see asia.stampy.common.message.AbstractMessage#postHeader()
    */
   @Override
-  protected String postHeader() {
+  protected byte[] postHeader() {
     if (getBody() == null) return null;
 
     if (isText()) {
       return getBody();
     } else {
       try {
+        if (this.body instanceof byte[]) {
+          return (byte[]) this.body;
+        }
         String encoded = getBodyEncoding().equals(JAVA_BASE64_MIME_TYPE) ? getObjectArrayAsBase64(getBody())
             : getObjectArrayAsString(getBody());
         getHeader().removeHeader(AbstractBodyMessageHeader.CONTENT_TYPE);
         getHeader().removeHeader(AbstractMessageHeader.CONTENT_LENGTH);
         getHeader().setContentLength(encoded.length());
         getHeader().setContentType(getBodyEncoding());
-        return encoded;
+        return encoded.getBytes();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

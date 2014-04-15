@@ -155,8 +155,8 @@ public class ClientMinaMessageGateway extends AbstractStampyMinaMessageGateway {
    * 
    */
   @Override
-  public void sendMessage(String message, HostPort hostPort) throws InterceptException {
-    broadcastMessage(message);
+  public void sendMessage(byte[] message, HostPort hostPort) throws InterceptException {
+    broadcastMessage(new String(message));
   }
 
   /*
@@ -167,7 +167,7 @@ public class ClientMinaMessageGateway extends AbstractStampyMinaMessageGateway {
    * .String)
    */
   @Override
-  public void broadcastMessage(String message) throws InterceptException {
+  public void broadcastMessage(byte[] message) throws InterceptException {
     if (!connector.isActive()) {
       log.warn("Attempting to send message {} when the connector is not active", message);
       throw new IllegalStateException("The connector is not active, cannot send message");

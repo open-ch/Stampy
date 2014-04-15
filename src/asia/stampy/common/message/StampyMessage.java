@@ -45,7 +45,7 @@ public interface StampyMessage<HDR extends StampyMessageHeader> extends Serializ
    *          if true message validation is executed
    * @return the string
    */
-  String toStompMessage(boolean validate);
+  byte[] toStompMessage(boolean validate);
 
   /**
    * Gets the message type.
