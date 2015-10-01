@@ -1,4 +1,4 @@
-Stampy, a Java implementation of the STOMP 1.2 specification
+Stampy, a Java implementation of the STOMP 1.2 specification.
 
 This project was built using Java 7 in Eclipse, with Apache Ant & Apache Ivy.  The artifacts produced are Java 5 compatible.
 The text below is taken from the generated overview html in the Javadocs.  The build produces 6 artifacts:
